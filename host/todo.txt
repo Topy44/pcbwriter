@@ -1,0 +1,22 @@
+Stuff to be implemented
+
+Functions:
+Home
+
+Load file
+Flip X
+Flip Y
+
+
+Status:
+Is homed?
+Current position
+Connection status
+
+Parameters:
+X Home
+X End
+Y Start
+Y End
+File X Pos
+File Y Pos
