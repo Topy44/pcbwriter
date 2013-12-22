@@ -27,15 +27,19 @@ class PCBWriter:
 
     REQ_CAN_SEND = 0xC0
 
-    def __init__(self):
+    def __init__(self, called_from_gui=False):
         self.dev = usb.core.find(idVendor = 0x1337, idProduct = 0xabcd)
-        #if self.dev is None:
-        #    raise RuntimeError("Device not found")
+        if self.dev is None and not called_from_gui:
+            raise RuntimeError("Device not found")
 
     def __del__(self):
-        self.stepper_off()
+        if self.dev is not None:
+            self.stepper_off()
 
-    def set_n_scans(self, n_scans):
+    def find_device(self):
+        self.dev = usb.core.find(idVendor = 0x1337, idProduct = 0xabcd)
+
+    def set_n_scans(self, n_scans):    # Scans per line (exposure time)
         self.dev.ctrl_transfer(bmRequestType=0xC0, bRequest=self.REQ_SET_N_SCANS, wValue=n_scans, wIndex=0, data_or_wLength=0, timeout=1000)
 
     def set_autostep(self, autostep):
@@ -73,7 +77,7 @@ class PCBWriter:
             while self.get_stepper_busy():
                 time.sleep(0.1)
 
-    def move_stepper(self, pos, relative, wait=False):
+    def move_stepper(self, pos, relative, wait=False):    # Move stepper (1/600" in prototype), relative move if relative == True
         self.dev.ctrl_transfer(bmRequestType=0xC0, bRequest=self.REQ_MOVE_STEPPER, wValue=pos, wIndex=relative, data_or_wLength=0, timeout=1000)
 
         if wait:
