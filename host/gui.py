@@ -5,6 +5,7 @@ from pcbwriter import PCBWriter
 
 pcb = PCBWriter(called_from_gui=True)
 
+# Signal handler class
 class Handler:
     def onDeleteEvent(self, *args):
         Gtk.main_quit(*args)
@@ -19,10 +20,10 @@ class Handler:
         pcb.find_device()
         if pcb.dev:
             builder.get_object("buttonHome").set_sensitive(True)
-            console.insert(console.get_end_iter(), "\nDevice found!")
+            print_to_console("\nDevice found!")
         else:
             builder.get_object("buttonHome").set_sensitive(False)
-            console.insert(console.get_end_iter(), "\nDevice not found...")
+            print_to_console("\nDevice not found...")
 
     def on_buttonStepperOff_clicked(self, button):
         pcb.stepper_off()
@@ -50,6 +51,8 @@ class Handler:
         draw_ruler(da, cr, xpos=20/scale, ypos=0, len=da.get_allocation().width  / scale, scale=scale, vertical=False, skipzero=True)
         draw_ruler(da, cr, xpos=0, ypos=20/scale, len=da.get_allocation().height / scale, scale=scale, vertical=True, skipzero=True)
 
+    def on_buttonLoadimage_clicked(self, button):
+        pass
 
 def draw_ruler(da, cr, xpos, ypos, len, scale, offset=0, vertical=False, skipzero=False):
     # Parameters
@@ -115,6 +118,10 @@ def draw_ruler(da, cr, xpos, ypos, len, scale, offset=0, vertical=False, skipzer
     if vertical:
         cr.restore()
 
+def print_to_console(message):
+    console.get_buffer().insert(console.get_buffer().get_end_iter(), message)
+    console.scroll_mark_onscreen(console.get_buffer().get_insert())
+
 # Load GUI layout
 builder = Gtk.Builder()
 builder.add_from_file("pcbwriter.glade")
@@ -124,8 +131,8 @@ builder.connect_signals(Handler())
 window = builder.get_object("pcbwriter")
 
 # Prepare the console
-console = builder.get_object("textviewConsole").get_buffer()
-console.set_text("PCBWriter GUI")
+console = builder.get_object("textviewConsole")
+print_to_console("PCBWriter GUI")
 
 # Prepare the image preview
 preview = builder.get_object("drawingareaPreview")
