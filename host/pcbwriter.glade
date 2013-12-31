@@ -100,7 +100,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="receives_default">True</property>
-                    <signal name="clicked" handler="onButtonFindDeviceClicked" swapped="no"/>
+                    <signal name="clicked" handler="on_buttonFindDevice_clicked" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -115,7 +115,7 @@
                     <property name="sensitive">False</property>
                     <property name="can_focus">False</property>
                     <property name="receives_default">True</property>
-                    <signal name="clicked" handler="onButtonHomeClicked" swapped="no"/>
+                    <signal name="clicked" handler="on_buttonHome_clicked" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -130,7 +130,7 @@
                     <property name="sensitive">False</property>
                     <property name="can_focus">False</property>
                     <property name="receives_default">True</property>
-                    <signal name="clicked" handler="onButtonStepperOffClicked" swapped="no"/>
+                    <signal name="clicked" handler="on_buttonStepperOff_clicked" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -178,6 +178,23 @@
                     <property name="fill">True</property>
                     <property name="position">3</property>
                   </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="loadimage">
+                    <property name="label" translatable="yes">Load Image</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="receives_default">True</property>
+                    <signal name="clicked" handler="on_buttonLoadimage_clicked" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">4</property>
+                  </packing>
+                </child>
+                <child>
+                  <placeholder/>
                 </child>
               </object>
               <packing>

@@ -12,10 +12,10 @@ class Handler:
     def onImagemenuitemFileQuitActivate(self, *args):
         Gtk.main_quit(*args)
 
-    def onButtonHomeClicked(self, button):
+    def on_buttonHome_clicked(self, button):
         pcb.home_stepper(wait=True)
 
-    def onButtonFindDeviceClicked(self, button):
+    def on_buttonFindDevice_clicked(self, button):
         pcb.find_device()
         if pcb.dev:
             builder.get_object("buttonHome").set_sensitive(True)
@@ -24,7 +24,7 @@ class Handler:
             builder.get_object("buttonHome").set_sensitive(False)
             console.insert(console.get_end_iter(), "\nDevice not found...")
 
-    def onButtonStepperOffClicked(self, button):
+    def on_buttonStepperOff_clicked(self, button):
         pcb.stepper_off()
 
     def on_drawingareaPreview_draw(self, da, cr):
