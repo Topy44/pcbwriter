@@ -34,32 +34,40 @@ class Handler:
     def on_drawingareaPreview_draw(self, da, cr):
         dawidth = da.get_allocation().width
         daheight = da.get_allocation().height
+        devwidth = builder.get_object("adjustmentDeviceWidth").get_value()
+        devheight = builder.get_object("adjustmentDeviceHeight").get_value()
+        limits = 10
+        scale = float(dawidth) / (devwidth + limits * 2)
 
         # Fill background
         cr.set_source_rgb(0.2, 0.2, 0.2)
         cr.rectangle(0, 0, dawidth, daheight)
         cr.fill()
 
-        cr.set_source_rgb(0.6, 0.8, 0.8)
-        cr.rectangle(0, 0, 100, daheight)
-        cr.rectangle(dawidth - 100, 0, 100, daheight)
-        cr.fill()
-
+        # Draw image if an image is loaded
         if self.img is not None:
             self.img.draw(cr, dawidth)
 
-        # Apply scaling to fit surface
-        scale = float(dawidth) / float(180)
-        cr.scale(scale, scale)
+        # Draw rulers
+        draw_ruler(da, cr, xpos=20, ypos=0, length=dawidth, scale=scale, offset = limits * scale, limit = devwidth * scale, vertical=False, skipzero=True)
+        draw_ruler(da, cr, xpos=0, ypos=20, length=daheight, scale=scale, offset = limits * scale, limit = devwidth * scale, vertical=True, skipzero=True)
 
         # Draw box in corner
-        cr.set_source_rgba(1, 1, 1, 0.6)
-        cr.rectangle(0, 0, 20/scale, 20/scale)
+        cr.set_line_width(1)
+        cr.rectangle(0, 0, 20, 20)
+        cr.set_source_rgba(0, 0, 0, 1)
+        cr.stroke_preserve()
+        cr.set_source_rgba(1, 1, 1, 0.8)
         cr.fill()
 
-        # Draw rulers
-        draw_ruler(da, cr, xpos=20/scale, ypos=0, len=dawidth  / scale, scale=scale, vertical=False, skipzero=True)
-        draw_ruler(da, cr, xpos=0, ypos=20/scale, len=daheight / scale, scale=scale, vertical=True, skipzero=True)
+        # Apply scaling to fit device surface
+        cr.scale(scale, scale)
+        cr.translate(limits, limits)
+
+        # Draw device limits
+        cr.set_source_rgb(0.6, 0.8, 0.8)
+        cr.rectangle(0, 0, dawidth / scale - limits * 2, daheight / scale - limits * 2)
+        cr.fill()
 
     def on_buttonLoadimage_clicked(self, button):
         dialog = Gtk.FileChooserDialog("Please choose a file", builder.get_object("pcbwriter"),
@@ -113,7 +121,14 @@ class image:
         # Using temporary png file because GdkPixbuf.Pixbuf.new_from_data() appears to be broken
         h, self.imgtmp = tempfile.mkstemp()
         imgtmp = open(self.imgtmp, "w")
-        imgtmp.write(ghostscript.load_image(self.pdftmp, self.bbox, 72, 72, self.bbox[2], self.bbox[3], "pnggray").tostring())
+        imgtmp.write(ghostscript.load_image(
+            self.pdftmp,
+            self.bbox,
+            72.0 * (width / self.bbox[2]),
+            72.0 * (width / self.bbox[2]),
+            width,
+            self.bbox[3] * (width / self.bbox[2]),
+            "pnggray").tostring())
         imgtmp.close()
         os.close(h)
         self.img = GdkPixbuf.Pixbuf.new_from_file(self.imgtmp)
