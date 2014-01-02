@@ -2,10 +2,9 @@
 import os, sys, math, cairo, tempfile, ghostscript, shutil
 from gi.repository import Gtk, Gdk, GdkPixbuf
 from pcbwriter import PCBWriter
+from drawruler import draw_ruler
 
 pcb = PCBWriter(called_from_gui=True)
-
-#print dir(GdkPixbuf.Pixbuf)
 
 # Signal handler class
 class Handler:
@@ -60,9 +59,26 @@ class Handler:
         draw_ruler(da, cr, xpos=0, ypos=20/scale, len=da.get_allocation().height / scale, scale=scale, vertical=True, skipzero=True)
 
     def on_buttonLoadimage_clicked(self, button):
-        self.img = image()
-        self.img.load("helloworld.pdf")
+        dialog = Gtk.FileChooserDialog("Please choose a file", builder.get_object("pcbwriter"),
+            Gtk.FileChooserAction.OPEN,
+            (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+             Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
 
+        filter_pdf = Gtk.FileFilter()
+        filter_pdf.set_name("PDF Files")
+        filter_pdf.add_mime_type("application/pdf")
+        dialog.add_filter(filter_pdf)
+
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            self.img = image()
+            self.img.load(dialog.get_filename())
+        elif response == Gtk.ResponseType.CANCEL:
+            print("Cancel clicked")
+
+        dialog.destroy()
+
+# Image loading and drawing
 class image:
     def __init__(self):
         self.imgtmp = None
@@ -91,7 +107,7 @@ class image:
             # Using temporary png file because GdkPixbuf.Pixbuf.new_from_data() appears to be broken
             h, self.imgtmp = tempfile.mkstemp()
             imgtmp = open(self.imgtmp, "w")
-            imgtmp.write(ghostscript.load_image(self.pdftmp, self.bbox, 144, 144, self.bbox[2]*2, self.bbox[3]*2, "pnggray").tostring())
+            imgtmp.write(ghostscript.load_image(self.pdftmp, self.bbox, 72, 72, self.bbox[2], self.bbox[3], "pnggray").tostring())
             imgtmp.close()
             os.close(h)
 
@@ -103,70 +119,6 @@ class image:
     def draw(self, cr):
         Gdk.cairo_set_source_pixbuf(cr, self.img, 20, 20)
         cr.paint()
-
-def draw_ruler(da, cr, xpos, ypos, len, scale, offset=0, vertical=False, skipzero=False):
-    # Parameters
-    height = 20.0/scale    # Height of ruler
-    sheight = 4.0/scale    # Length of short marks
-    ldist = 10.0    # Distance between long marks (and between measure numbers)
-    sdist = 1.0    # Distance between short marks
-
-    if vertical:
-        xpos -= height
-        xpos, ypos = ypos, xpos
-        cr.save()
-        cr.rotate(math.radians(90))
-
-    # Draw background
-    cr.set_source_rgba(1, 1, 1, 0.6)
-    cr.rectangle(xpos, ypos, len, height)
-    cr.fill()
-
-    # Draw edge
-    cr.set_source_rgba(0, 0, 0, 0.7)
-    cr.set_line_width(1.0/scale)
-    if vertical:
-        cr.move_to(xpos, ypos)
-        cr.line_to(len, ypos)
-    else:
-        cr.move_to(xpos, ypos + height)
-        cr.line_to(len, ypos + height)
-    cr.stroke()
-
-    # Draw long marks
-    i = 0.0
-    while i * ldist <= len:
-        cr.move_to(i * ldist + xpos, ypos)
-        cr.line_to(i * ldist + xpos, ypos + height)
-        i += 1
-    cr.stroke()
-
-    # Draw short marks
-    i = 0.0
-    while i * sdist <= len:
-        if vertical:
-            cr.move_to(i * sdist + xpos, ypos + sheight)
-            cr.line_to(i * sdist + xpos, ypos )
-        else:
-            cr.move_to(i * sdist + xpos, ypos + height - sheight)
-            cr.line_to(i * sdist + xpos, ypos + height)
-        i += 1
-    cr.stroke()
-
-    # Draw measures
-    cr.select_font_face("Courier", cairo.FONT_SLANT_NORMAL)
-    cr.set_font_size(15/scale)
-    if cr.text_extents("000")[4] > ldist:
-        cr.set_font_size(15/scale / (cr.text_extents("000")[4] / ldist))
-
-    i = 0.0
-    while i * ldist <= len:
-        cr.move_to(i * ldist + xpos + 0.5, ypos + height / 2 + cr.text_extents(str(i * ldist - offset))[3] / 2)
-        cr.show_text(str(int(i * ldist + offset)))
-        i += 1
-
-    if vertical:
-        cr.restore()
 
 def print_to_console(message):
     console.get_buffer().insert(console.get_buffer().get_end_iter(), message)
