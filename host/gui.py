@@ -60,13 +60,13 @@ class Handler:
         cr.set_source_rgba(1, 1, 1, 0.8)
         cr.fill()
 
-        # Apply scaling to fit device surface
+        # Apply scaling to fit device surface and set origin
         cr.scale(scale, scale)
         cr.translate(limits, limits)
 
         # Draw device limits
         cr.set_source_rgb(0.6, 0.8, 0.8)
-        cr.rectangle(0, 0, dawidth / scale - limits * 2, daheight / scale - limits * 2)
+        cr.rectangle(0, 0, devwidth, devheight)
         cr.fill()
 
     def on_buttonLoadimage_clicked(self, button):
