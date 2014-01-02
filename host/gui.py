@@ -32,21 +32,24 @@ class Handler:
         pcb.stepper_off()
 
     def on_drawingareaPreview_draw(self, da, cr):
+        dawidth = da.get_allocation().width
+        daheight = da.get_allocation().height
+
         # Fill background
         cr.set_source_rgb(0.2, 0.2, 0.2)
-        cr.rectangle(0, 0, da.get_allocation().width, da.get_allocation().height)
+        cr.rectangle(0, 0, dawidth, daheight)
         cr.fill()
 
         cr.set_source_rgb(0.6, 0.8, 0.8)
-        cr.rectangle(0, 0, 100, da.get_allocation().height)
-        cr.rectangle(da.get_allocation().width - 100, 0, 100, da.get_allocation().height)
+        cr.rectangle(0, 0, 100, daheight)
+        cr.rectangle(dawidth - 100, 0, 100, daheight)
         cr.fill()
 
         if self.img is not None:
-            self.img.draw(cr)
+            self.img.draw(cr, dawidth)
 
         # Apply scaling to fit surface
-        scale = float(da.get_allocation().width) / float(180)
+        scale = float(dawidth) / float(180)
         cr.scale(scale, scale)
 
         # Draw box in corner
@@ -55,8 +58,8 @@ class Handler:
         cr.fill()
 
         # Draw rulers
-        draw_ruler(da, cr, xpos=20/scale, ypos=0, len=da.get_allocation().width  / scale, scale=scale, vertical=False, skipzero=True)
-        draw_ruler(da, cr, xpos=0, ypos=20/scale, len=da.get_allocation().height / scale, scale=scale, vertical=True, skipzero=True)
+        draw_ruler(da, cr, xpos=20/scale, ypos=0, len=dawidth  / scale, scale=scale, vertical=False, skipzero=True)
+        draw_ruler(da, cr, xpos=0, ypos=20/scale, len=daheight / scale, scale=scale, vertical=True, skipzero=True)
 
     def on_buttonLoadimage_clicked(self, button):
         dialog = Gtk.FileChooserDialog("Please choose a file", builder.get_object("pcbwriter"),
@@ -72,7 +75,7 @@ class Handler:
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
             self.img = image()
-            self.img.load(dialog.get_filename())
+            self.img.load(dialog.get_filename(), builder.get_object("drawingareaPreview"))
         elif response == Gtk.ResponseType.CANCEL:
             print("Cancel clicked")
 
@@ -90,7 +93,7 @@ class image:
         if self.imgtmp is not None: os.remove(self.imgtmp)
         if self.pdftmp is not None: os.remove(self.pdftmp)
 
-    def load(self, filename):
+    def load(self, filename, da):
         # Check if file exists
         if not os.path.isfile(filename):
             print_to_console("\nFile \"%s\" not found." % filename )
@@ -104,19 +107,21 @@ class image:
             shutil.copy(filename, self.pdftmp)
             os.close(h)
 
-            # Using temporary png file because GdkPixbuf.Pixbuf.new_from_data() appears to be broken
-            h, self.imgtmp = tempfile.mkstemp()
-            imgtmp = open(self.imgtmp, "w")
-            imgtmp.write(ghostscript.load_image(self.pdftmp, self.bbox, 72, 72, self.bbox[2], self.bbox[3], "pnggray").tostring())
-            imgtmp.close()
-            os.close(h)
+            Gtk.Widget.queue_draw(da)
 
-            self.img = GdkPixbuf.Pixbuf.new_from_file(self.imgtmp)
-            print self.img.get_height()
-            print self.img.get_width()
-            Gtk.Widget.queue_draw(builder.get_object("drawingareaPreview"))
+    def render(self, width):
+        # Using temporary png file because GdkPixbuf.Pixbuf.new_from_data() appears to be broken
+        h, self.imgtmp = tempfile.mkstemp()
+        imgtmp = open(self.imgtmp, "w")
+        imgtmp.write(ghostscript.load_image(self.pdftmp, self.bbox, 72, 72, self.bbox[2], self.bbox[3], "pnggray").tostring())
+        imgtmp.close()
+        os.close(h)
+        self.img = GdkPixbuf.Pixbuf.new_from_file(self.imgtmp)
+        print self.img.get_height()
+        print self.img.get_width()
 
-    def draw(self, cr):
+    def draw(self, cr, width):
+        self.render(width)
         Gdk.cairo_set_source_pixbuf(cr, self.img, 20, 20)
         cr.paint()
 
