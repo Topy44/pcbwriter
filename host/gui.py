@@ -39,6 +39,8 @@ class Handler:
         limits = 10
         scale = float(dawidth) / (devwidth + limits * 2)
 
+        da.set_size_request(dawidth, (devheight + limits * 2) * scale)
+
         # Fill background
         cr.set_source_rgb(0.2, 0.2, 0.2)
         cr.rectangle(0, 0, dawidth, daheight)
@@ -72,8 +74,7 @@ class Handler:
     def on_buttonLoadimage_clicked(self, button):
         dialog = Gtk.FileChooserDialog("Please choose a file", builder.get_object("pcbwriter"),
             Gtk.FileChooserAction.OPEN,
-            (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-             Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
+            (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
 
         filter_pdf = Gtk.FileFilter()
         filter_pdf.set_name("PDF Files")

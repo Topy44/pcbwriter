@@ -312,11 +312,26 @@
                 <property name="can_focus">False</property>
                 <property name="orientation">vertical</property>
                 <child>
-                  <object class="GtkDrawingArea" id="drawingareaPreview">
+                  <object class="GtkScrolledWindow" id="scrolledwindowPreview">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="vexpand">True</property>
-                    <signal name="draw" handler="on_drawingareaPreview_draw" swapped="no"/>
+                    <property name="hscrollbar_policy">never</property>
+                    <property name="shadow_type">in</property>
+                    <child>
+                      <object class="GtkViewport" id="viewportPreview">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="vscroll_policy">natural</property>
+                        <child>
+                          <object class="GtkDrawingArea" id="drawingareaPreview">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="vexpand">True</property>
+                            <signal name="draw" handler="on_drawingareaPreview_draw" swapped="no"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
                   </object>
                   <packing>
                     <property name="resize">True</property>
@@ -358,7 +373,7 @@
       </object>
     </child>
   </object>
-  <object class="GtkSizeGroup" id="sizegroup1">
+  <object class="GtkSizeGroup" id="sizegroupSettings">
     <widgets>
       <widget name="spinbuttonNcount"/>
       <widget name="spinbuttonDeviceWidth"/>
