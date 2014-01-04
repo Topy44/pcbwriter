@@ -124,29 +124,31 @@ class image:
 
             print_to_console("\nLoading image: \"%s\"" % filename)
             self.bbox = ghostscript.get_bbox(self.pdftmp)
+            print "Bounding Box:"
             print self.bbox
 
-            pdf = pyPdf.PdfFileReader(file(self.pdftmp))
-            self.mbox = pdf.getPage(0).mediaBox
+            #pdf = pyPdf.PdfFileReader(file(self.pdftmp))
+            #self.mbox = pdf.getPage(0).mediaBox
 
-            print self.mbox
-            pwidth = float(self.mbox[2] - self.mbox[0]) / 72.0 * 25.4
-            pheight = float(self.mbox[3] - self.mbox[1]) / 72.0 * 25.4
+            #print "Media Box"
+            #print self.mbox
+            pwidth = float(self.bbox[2] - self.bbox[0]) / 72.0 * 25.4
+            pheight = float(self.bbox[3] - self.bbox[1]) / 72.0 * 25.4
             print_to_console("\nImage size: %.2f mm x %.2f mm" % (pwidth, pheight))
 
             Gtk.Widget.queue_draw(da)
 
     def render(self, width):
         # Using temporary png file because GdkPixbuf.Pixbuf.new_from_data() appears to be broken
-        h, self.imgtmp = tempfile.mkstemp()
+        h, self.imgtmp = tempfile.mkstemp(suffix=".png")
         imgtmp = open(self.imgtmp, "w")
         imgtmp.write(ghostscript.load_image(
             self.pdftmp,
             self.bbox,
             72,
             72,
-            self.mbox[2],
-            self.mbox[3],
+            self.bbox[2],
+            self.bbox[3],
             "pnggray").tostring())
         imgtmp.close()
         os.close(h)

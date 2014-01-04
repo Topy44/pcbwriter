@@ -3,14 +3,17 @@ import array
 import subprocess
 
 def get_bbox(fname):
-    args = ["gs"]
+    #args = ["gs"]
+    args = ["C:/Program Files (x86)/gs/gs9.10/bin/gswin32c.exe"]
     args += ["-o", "%stdout%"]
     args += ["-dQUIET"]
+    args += ["-dBATCH"]
+    args += ["-dNOPAUSE"]
     args += ["-dLastPage=1"]
     args += ["-sDEVICE=bbox"]
     args += ["-f", fname]
 
-    #print " ".join(args)
+    print " ".join(args)
 
     p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (stdout_data, stderr_data) = p.communicate(None)
@@ -24,9 +27,12 @@ def get_bbox(fname):
     return bbox
 
 def load_image(fname, bbox, xres, yres, width_px, height_px, device="bit"):
-    args = ["gs"]
+    #args = ["gs"]
+    args = ["C:/Program Files (x86)/gs/gs9.10/bin/gswin32c.exe"]
     args += ["-o", "%stdout%"]
     args += ["-dQUIET"]
+    args += ["-dBATCH"]
+    args += ["-dNOPAUSE"]
     args += ["-dLastPage=1"]
     args += ["-sDEVICE=" + device]
     args += ["-r%dx%d" % (xres, yres)]
@@ -34,7 +40,7 @@ def load_image(fname, bbox, xres, yres, width_px, height_px, device="bit"):
     args += ["-c", "<</Install {%f %f translate}>> setpagedevice" % (-bbox[0], -bbox[1])]
     args += ["-f", fname]
 
-    #print " ".join(args)
+    print " ".join(args)
 
     p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (stdout_data, stderr_data) = p.communicate(None)
