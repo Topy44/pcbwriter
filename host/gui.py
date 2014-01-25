@@ -104,7 +104,8 @@ class image:
     def __init__(self):
         self.imgtmp = None
         self.pdftmp = None
-        self.lastrenderwidth = None
+        self.pixbuf = None
+        self.quality = 2
         pass
 
     def __del__(self):
@@ -128,44 +129,40 @@ class image:
 
             pdf = pyPdf.PdfFileReader(file(self.pdftmp))
             self.mbox = pdf.getPage(0).mediaBox
-
             print self.mbox
+
             pwidth = float(self.mbox[2] - self.mbox[0]) / 72.0 * 25.4
             pheight = float(self.mbox[3] - self.mbox[1]) / 72.0 * 25.4
             print_to_console("\nImage size: %.2f mm x %.2f mm" % (pwidth, pheight))
 
             Gtk.Widget.queue_draw(da)
 
-    def render(self, width):
+    def render(self):
         # Using temporary png file because GdkPixbuf.Pixbuf.new_from_data() appears to be broken
         h, self.imgtmp = tempfile.mkstemp()
+        print self.imgtmp
         imgtmp = open(self.imgtmp, "w")
         imgtmp.write(ghostscript.load_image(
-            self.pdftmp,
-            self.bbox,
-            72,
-            72,
-            self.mbox[2],
-            self.mbox[3],
-            "pnggray").tostring())
+            self.pdftmp,    # PDF Filename
+            [0, 0, 0, 0],    # Don't supply a bounding box
+            72 * self.quality,    # X Resolution * quality factor
+            72 * self.quality,    # Y Resolution * quality factor
+            0,    # 0 = Render entire page
+            0,    # 0 = Render entire page
+            "pngmono").tostring())
         imgtmp.close()
         os.close(h)
-        self.img = GdkPixbuf.Pixbuf.new_from_file(self.imgtmp)
-        self.lastrenderwidth = width
-        print self.img.get_height()    #px
-        print self.img.get_width()    #px
+        return GdkPixbuf.Pixbuf.new_from_file(self.imgtmp)
 
     def draw(self, cr, width):
-        if self.imgtmp is not None and self.lastrenderwidth is not None:
-            cr.save()
-            cr.scale(self.lastrenderwidth / width, self.lastrenderwidth / width)
-            Gdk.cairo_set_source_pixbuf(cr, self.img, 0, 0)
-            cr.paint()
-            cr.restore()
-        else:
-            if self.lastrenderwidth != width: self.render(width)
-            Gdk.cairo_set_source_pixbuf(cr, self.img, 0, 0)
-            cr.paint()
+        if self.pixbuf is None:
+            self.pixbuf = self.render()
+        scale = builder.get_object("adjustmentZoom").get_value() / 72 * 25.4 / self.quality
+        cr.save()
+        cr.scale(scale, scale)
+        Gdk.cairo_set_source_pixbuf(cr, self.pixbuf, 0, 0)
+        cr.paint()
+        cr.restore()
 
 def print_to_console(message):
     console.get_buffer().insert(console.get_buffer().get_end_iter(), message)
