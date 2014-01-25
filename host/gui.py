@@ -1,8 +1,9 @@
 #!/usr/bin/env python
-import os, sys, math, cairo, tempfile, ghostscript, shutil, pyPdf
+import os, sys, math, cairo, tempfile, ghostscript, shutil, pyPdf, StringIO
 from gi.repository import Gtk, Gdk, GdkPixbuf
 from pcbwriter import PCBWriter
 from drawruler import draw_rulers
+from PIL import Image
 
 pcb = PCBWriter(called_from_gui=True)
 
@@ -149,10 +150,13 @@ class image:
             72 * self.quality,    # Y Resolution * quality factor
             0,    # 0 = Render entire page
             0,    # 0 = Render entire page
-            "pngmono").tostring())
+            "pnggray").tostring())
         imgtmp.close()
         os.close(h)
-        return GdkPixbuf.Pixbuf.new_from_file(self.imgtmp)
+
+        pil = Image.open(self.imgtmp)
+
+        return image2pixbuf(pil)
 
     def draw(self, cr, width):
         if self.pixbuf is None:
@@ -168,6 +172,19 @@ def print_to_console(message):
     console.get_buffer().insert(console.get_buffer().get_end_iter(), message)
     console.scroll_mark_onscreen(console.get_buffer().get_insert())
     print message
+
+def image2pixbuf(img):
+    if img.mode != 'RGB':          # Fix IOError: cannot write mode P as PPM
+        img = img.convert('RGB')
+    buff = StringIO.StringIO()
+    img.save(buff, 'ppm')
+    contents = buff.getvalue()
+    buff.close()
+    loader = GdkPixbuf.PixbufLoader.new_with_type('pnm')
+    loader.write(contents)
+    pixbuf = loader.get_pixbuf()
+    loader.close()
+    return pixbuf
 
 # Load GUI layout
 builder = Gtk.Builder()
