@@ -64,7 +64,6 @@ class Handler:
         cr.set_source_rgb(0.6, 0.8, 0.8)
         cr.rectangle(self.limits * device.scale, self.limits * device.scale, (self.devwidth - self.limits) * device.scale, (self.devheight - self.limits) * device.scale)
         cr.fill()
-        print device.scale
 
         # Draw image if an image is loaded
         if self.img is not None:
@@ -108,6 +107,10 @@ class Handler:
         device.leftmargin = adj.get_value()
         Gtk.Widget.queue_draw(builder.get_object("drawingareaPreview"))
 
+    def on_adjThreshold_value_changed(self, adj):
+        self.img.threshold = adj.get_value()
+        Gtk.Widget.queue_draw(builder.get_object("drawingareaPreview"))
+
 # Device properties and controls
 class Device:
     def __init__(self):
@@ -120,9 +123,10 @@ class Img:
     def __init__(self):
         self.imgtmp = None
         self.pdftmp = None
-        self.pixbuf = None
+        self.pil = None
         self.quality = 2
-        pass
+        self.threshold = 128
+        self._thresholdtable = self._generate_threshold_table(self.threshold)
 
     def __del__(self):
         print_to_console("\nRemoving temp files...")
@@ -165,44 +169,45 @@ class Img:
             "pnggray").tostring())
         imgtmp.close()
         os.close(h)
-
-        def threshold(px):
-            if px < 128: return 0
-            else: return 255
-
-        pil = Image.open(self.imgtmp)
-        pil = Image.eval(pil, threshold)
-        #pil = pil.convert(mode="1", dither=Image.NONE)
-
-        return image2pixbuf(pil)
+        return Image.open(self.imgtmp)
 
     def draw(self, cr, width):
-        if self.pixbuf is None:
-            self.pixbuf = self.render()
+        if self.pil is None:
+            self.pil = self.render()
+
+        # TODO: Make faster by only redrawing PIL when necessary
+        pil2 = self.pil.point(self._thresholdtable)
+
+        pil2 = pil2.convert('RGB')
+        buff = StringIO.StringIO()
+        pil2.save(buff, 'ppm')
+        contents = buff.getvalue()
+        buff.close()
+        loader = GdkPixbuf.PixbufLoader.new_with_type('pnm')
+        loader.write(contents)
+        pixbuf = loader.get_pixbuf()
+        loader.close()
+
         scale = device.scale / 72 * 25.4 / self.quality
         cr.save()
         cr.scale(scale, scale)
-        Gdk.cairo_set_source_pixbuf(cr, self.pixbuf, device.leftmargin, device.topmargin)
+        Gdk.cairo_set_source_pixbuf(cr, pixbuf, device.leftmargin, device.topmargin)
         cr.paint()
         cr.restore()
+
+    def _generate_threshold_table(self, threshold):
+        x = []
+        for i in range(0, threshold):
+            x.append(0)
+        for i in range(threshold, 256):
+            x.append(255)
+        print len(x)
+        return x
 
 def print_to_console(message):
     console.get_buffer().insert(console.get_buffer().get_end_iter(), message)
     console.scroll_mark_onscreen(console.get_buffer().get_insert())
     print message
-
-def image2pixbuf(img):
-    if img.mode != 'RGB':          # Fix IOError: cannot write mode P as PPM
-        img = img.convert('RGB')
-    buff = StringIO.StringIO()
-    img.save(buff, 'ppm')
-    contents = buff.getvalue()
-    buff.close()
-    loader = GdkPixbuf.PixbufLoader.new_with_type('pnm')
-    loader.write(contents)
-    pixbuf = loader.get_pixbuf()
-    loader.close()
-    return pixbuf
 
 # Create device instance
 device = Device()
