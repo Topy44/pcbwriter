@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <!-- interface-requires gtk+ 3.0 -->
+  <object class="GtkAdjustment" id="adjLeftmargin">
+    <property name="upper">500</property>
+    <property name="step_increment">0.10000000000000001</property>
+    <property name="page_increment">10</property>
+    <signal name="value-changed" handler="on_adjLeftmargin_value_changed" swapped="no"/>
+  </object>
+  <object class="GtkAdjustment" id="adjTopmargin">
+    <property name="upper">500</property>
+    <property name="step_increment">0.10000000000000001</property>
+    <property name="page_increment">10</property>
+    <signal name="value-changed" handler="on_adjTopmargin_value_changed" swapped="no"/>
+  </object>
   <object class="GtkAdjustment" id="adjustmentDeviceHeight">
     <property name="upper">1000</property>
     <property name="value">200</property>
@@ -178,7 +190,7 @@
                 <child>
                   <object class="GtkSpinButton" id="spinbuttonNcount">
                     <property name="visible">True</property>
-                    <property name="can_focus">False</property>
+                    <property name="can_focus">True</property>
                     <property name="max_length">4</property>
                     <property name="invisible_char">•</property>
                     <property name="width_chars">4</property>
@@ -226,7 +238,7 @@
                 <child>
                   <object class="GtkSpinButton" id="spinbuttonDeviceHeight">
                     <property name="visible">True</property>
-                    <property name="can_focus">False</property>
+                    <property name="can_focus">True</property>
                     <property name="invisible_char">•</property>
                     <property name="invisible_char_set">True</property>
                     <property name="input_purpose">number</property>
@@ -244,7 +256,7 @@
                 <child>
                   <object class="GtkSpinButton" id="spinbuttonDeviceWidth">
                     <property name="visible">True</property>
-                    <property name="can_focus">False</property>
+                    <property name="can_focus">True</property>
                     <property name="invisible_char">•</property>
                     <property name="invisible_char_set">True</property>
                     <property name="input_purpose">number</property>
@@ -322,6 +334,63 @@
                   <packing>
                     <property name="left_attach">0</property>
                     <property name="top_attach">8</property>
+                    <property name="width">1</property>
+                    <property name="height">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkSpinButton" id="leftmargin">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="max_length">5</property>
+                    <property name="invisible_char">•</property>
+                    <property name="adjustment">adjLeftmargin</property>
+                    <property name="digits">2</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">10</property>
+                    <property name="width">1</property>
+                    <property name="height">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkSpinButton" id="topmargin">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="invisible_char">•</property>
+                    <property name="adjustment">adjTopmargin</property>
+                    <property name="digits">2</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">11</property>
+                    <property name="width">1</property>
+                    <property name="height">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="label5">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Left margin</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">10</property>
+                    <property name="width">1</property>
+                    <property name="height">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="label6">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Top margin</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">11</property>
                     <property name="width">1</property>
                     <property name="height">1</property>
                   </packing>

@@ -11,8 +11,7 @@ pcb = PCBWriter(called_from_gui=True)
 class Handler:
     def __init__(self, *args):
         self.img = None
-        self.scale = 5.0
-        builder.get_object("adjustmentZoom").set_value(self.scale)
+        builder.get_object("adjustmentZoom").set_value(device.scale)
         self.devwidth = builder.get_object("adjustmentDeviceWidth").get_value()
         self.devheight = builder.get_object("adjustmentDeviceHeight").get_value()
         self.limits = 10
@@ -51,27 +50,28 @@ class Handler:
         daheight = da.get_allocation().height
 
         # Set drawingarea size for proper scrolling
-        da.set_size_request((self.devwidth + self.limits*2) * self.scale, (self.devheight + self.limits*2) * self.scale)
+        da.set_size_request((self.devwidth + self.limits*2) * device.scale, (self.devheight + self.limits*2) * device.scale)
 
         # Fill background
         cr.set_source_rgb(0.8, 0.8, 0.8)
         cr.rectangle(0, 0, dawidth, daheight)
         cr.fill()
 
-        # Draw rulers
-        draw_rulers(cr, self.scale, (self.limits * self.scale, self.limits * self.scale), (dawidth, daheight), (self.devwidth, self.devheight))
-
         # Set origin
-        cr.translate(self.limits * self.scale, self.limits * self.scale)
+        #cr.translate(self.limits * device.scale, self.limits * device.scale)
 
         # Draw device limits
         cr.set_source_rgb(0.6, 0.8, 0.8)
-        cr.rectangle(0, 0, self.devwidth * self.scale, self.devheight * self.scale)
+        cr.rectangle(self.limits * device.scale, self.limits * device.scale, (self.devwidth - self.limits) * device.scale, (self.devheight - self.limits) * device.scale)
         cr.fill()
+        print device.scale
 
         # Draw image if an image is loaded
         if self.img is not None:
             self.img.draw(cr, dawidth)
+
+        # Draw rulers
+        draw_rulers(cr, device.scale, (self.limits * device.scale, self.limits * device.scale), (dawidth, daheight), (self.devwidth, self.devheight))
 
     def on_buttonLoadimage_clicked(self, button):
         dialog = Gtk.FileChooserDialog("Please choose a file", builder.get_object("pcbwriter"),
@@ -85,7 +85,7 @@ class Handler:
 
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
-            self.img = image()
+            self.img = Img()
             self.img.load(dialog.get_filename(), builder.get_object("drawingareaPreview"))
         elif response == Gtk.ResponseType.CANCEL:
             pass
@@ -97,11 +97,26 @@ class Handler:
         Gtk.Widget.queue_draw(builder.get_object("drawingareaPreview"))
 
     def on_adjustmentZoom_value_changed(self, adj):
-        self.scale = adj.get_value()
+        device.scale = adj.get_value()
         Gtk.Widget.queue_draw(builder.get_object("drawingareaPreview"))
 
+    def on_adjTopmargin_value_changed(self, adj):
+        device.topmargin = adj.get_value()
+        Gtk.Widget.queue_draw(builder.get_object("drawingareaPreview"))
+
+    def on_adjLeftmargin_value_changed(self, adj):
+        device.leftmargin = adj.get_value()
+        Gtk.Widget.queue_draw(builder.get_object("drawingareaPreview"))
+
+# Device properties and controls
+class Device:
+    def __init__(self):
+        self.scale = 5.0
+        self.topmargin = 0.0
+        self.leftmargin = 0.0
+
 # Image loading and drawing
-class image:
+class Img:
     def __init__(self):
         self.imgtmp = None
         self.pdftmp = None
@@ -126,11 +141,9 @@ class image:
 
             print_to_console("\nLoading image: \"%s\"" % filename)
             self.bbox = ghostscript.get_bbox(self.pdftmp)
-            print self.bbox
 
             pdf = pyPdf.PdfFileReader(file(self.pdftmp))
             self.mbox = pdf.getPage(0).mediaBox
-            print self.mbox
 
             pwidth = float(self.mbox[2] - self.mbox[0]) / 72.0 * 25.4
             pheight = float(self.mbox[3] - self.mbox[1]) / 72.0 * 25.4
@@ -141,7 +154,6 @@ class image:
     def render(self):
         # Using temporary png file because GdkPixbuf.Pixbuf.new_from_data() appears to be broken
         h, self.imgtmp = tempfile.mkstemp()
-        print self.imgtmp
         imgtmp = open(self.imgtmp, "w")
         imgtmp.write(ghostscript.load_image(
             self.pdftmp,    # PDF Filename
@@ -154,17 +166,23 @@ class image:
         imgtmp.close()
         os.close(h)
 
+        def threshold(px):
+            if px < 128: return 0
+            else: return 255
+
         pil = Image.open(self.imgtmp)
+        pil = Image.eval(pil, threshold)
+        #pil = pil.convert(mode="1", dither=Image.NONE)
 
         return image2pixbuf(pil)
 
     def draw(self, cr, width):
         if self.pixbuf is None:
             self.pixbuf = self.render()
-        scale = builder.get_object("adjustmentZoom").get_value() / 72 * 25.4 / self.quality
+        scale = device.scale / 72 * 25.4 / self.quality
         cr.save()
         cr.scale(scale, scale)
-        Gdk.cairo_set_source_pixbuf(cr, self.pixbuf, 0, 0)
+        Gdk.cairo_set_source_pixbuf(cr, self.pixbuf, device.leftmargin, device.topmargin)
         cr.paint()
         cr.restore()
 
@@ -185,6 +203,9 @@ def image2pixbuf(img):
     pixbuf = loader.get_pixbuf()
     loader.close()
     return pixbuf
+
+# Create device instance
+device = Device()
 
 # Load GUI layout
 builder = Gtk.Builder()
