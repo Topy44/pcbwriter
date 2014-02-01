@@ -146,26 +146,28 @@ class Img:
             print_to_console("\nLoading image: \"%s\"" % filename)
             self.bbox = ghostscript.get_bbox(self.pdftmp)
 
-            pdf = pyPdf.PdfFileReader(file(self.pdftmp))
-            self.mbox = pdf.getPage(0).mediaBox
+            #pdf = pyPdf.PdfFileReader(file(self.pdftmp))
+            #self.mbox = pdf.getPage(0).mediaBox
+            #print self.mbox
 
-            pwidth = float(self.mbox[2] - self.mbox[0]) / 72.0 * 25.4
-            pheight = float(self.mbox[3] - self.mbox[1]) / 72.0 * 25.4
-            print_to_console("\nImage size: %.2f mm x %.2f mm" % (pwidth, pheight))
+            #pwidth = float(self.mbox[2] - self.mbox[0]) / 72.0 * 25.4
+            #pheight = float(self.mbox[3] - self.mbox[1]) / 72.0 * 25.4
+            #print_to_console("\nImage size: %.2f mm x %.2f mm" % (pwidth, pheight))
 
             Gtk.Widget.queue_draw(da)
 
     def render(self):
         # Using temporary png file because GdkPixbuf.Pixbuf.new_from_data() appears to be broken
-        h, self.imgtmp = tempfile.mkstemp()
-        imgtmp = open(self.imgtmp, "w")
+        h, self.imgtmp = tempfile.mkstemp(suffix = ".png")
+        print_to_console("\nTemporary .png file: \"%s\"" % self.imgtmp)
+        imgtmp = open(self.imgtmp, "wb")
         imgtmp.write(ghostscript.load_image(
-            self.pdftmp,    # PDF Filename
-            [0, 0, 0, 0],    # Don't supply a bounding box
-            72 * self.quality,    # X Resolution * quality factor
-            72 * self.quality,    # Y Resolution * quality factor
-            0,    # 0 = Render entire page
-            0,    # 0 = Render entire page
+            self.pdftmp, # PDF Filename
+            [0, 0, 0, 0], # Don't supply a bounding box
+            72 * self.quality, # X Resolution * quality factor
+            72 * self.quality, # Y Resolution * quality factor
+            0, # 0 = Render entire page
+            0, # 0 = Render entire page
             "pnggray").tostring())
         imgtmp.close()
         os.close(h)
