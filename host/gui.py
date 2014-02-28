@@ -9,13 +9,6 @@ pcb = PCBWriter(called_from_gui=True)
 
 # Signal handler class
 class Handler:
-    def __init__(self, *args):
-        self.img = None
-        builder.get_object("adjustmentZoom").set_value(device.scale)
-        self.devwidth = builder.get_object("adjustmentDeviceWidth").get_value()
-        self.devheight = builder.get_object("adjustmentDeviceHeight").get_value()
-        self.limits = 10
-
     def onDeleteEvent(self, *args):
         Gtk.main_quit(*args)
 
@@ -46,31 +39,7 @@ class Handler:
         Gtk.Widget.queue_draw(builder.get_object("drawingareaPreview"))
 
     def on_drawingareaPreview_draw(self, da, cr):
-        dawidth = da.get_allocation().width
-        daheight = da.get_allocation().height
-
-        # Set drawingarea size for proper scrolling
-        da.set_size_request((self.devwidth + self.limits*2) * device.scale, (self.devheight + self.limits*2) * device.scale)
-
-        # Fill background
-        cr.set_source_rgb(0.8, 0.8, 0.8)
-        cr.rectangle(0, 0, dawidth, daheight)
-        cr.fill()
-
-        # Set origin
-        #cr.translate(self.limits * device.scale, self.limits * device.scale)
-
-        # Draw device limits
-        cr.set_source_rgb(0.6, 0.8, 0.8)
-        cr.rectangle(self.limits * device.scale, self.limits * device.scale, (self.devwidth - self.limits) * device.scale, (self.devheight - self.limits) * device.scale)
-        cr.fill()
-
-        # Draw image if an image is loaded
-        if self.img is not None:
-            self.img.draw(cr, dawidth)
-
-        # Draw rulers
-        draw_rulers(cr, device.scale, (self.limits * device.scale, self.limits * device.scale), (dawidth, daheight), (self.devwidth, self.devheight))
+        layout.draw(da, cr)
 
     def on_buttonLoadimage_clicked(self, button):
         dialog = Gtk.FileChooserDialog("Please choose a file", builder.get_object("pcbwriter"),
@@ -110,6 +79,42 @@ class Handler:
     def on_adjThreshold_value_changed(self, adj):
         self.img.threshold = adj.get_value()
         Gtk.Widget.queue_draw(builder.get_object("drawingareaPreview"))
+
+class LayoutWidget:
+    def __init__(self):
+        self.img = None
+        builder.get_object("adjustmentZoom").set_value(device.scale)
+        self.devwidth = builder.get_object("adjustmentDeviceWidth").get_value()
+        self.devheight = builder.get_object("adjustmentDeviceHeight").get_value()
+        self.limits = 10
+
+    def draw(self, da, cr):
+        dawidth = da.get_allocation().width
+        daheight = da.get_allocation().height
+
+        # Set drawingarea size for proper scrolling
+        da.set_size_request((self.devwidth + self.limits*2) * device.scale, (self.devheight + self.limits*2) * device.scale)
+
+        # Fill background
+        cr.set_source_rgb(0.8, 0.8, 0.8)
+        cr.rectangle(0, 0, dawidth, daheight)
+        cr.fill()
+
+        # Set origin
+        #cr.translate(self.limits * device.scale, self.limits * device.scale)
+
+        # Draw device limits
+        cr.set_source_rgb(0.6, 0.8, 0.8)
+        cr.rectangle(self.limits * device.scale, self.limits * device.scale, (self.devwidth - self.limits) * device.scale, (self.devheight - self.limits) * device.scale)
+        cr.fill()
+
+        # Draw image if an image is loaded
+        if self.img is not None:
+            self.img.draw(cr, dawidth)
+
+        # Draw rulers
+        draw_rulers(cr, device.scale, (self.limits * device.scale, self.limits * device.scale), (dawidth, daheight), (self.devwidth, self.devheight))
+
 
 # Device properties and controls
 class Device:
@@ -213,6 +218,7 @@ def print_to_console(message):
 
 # Create device instance
 device = Device()
+layout = LayoutWidget()
 
 # Load GUI layout
 builder = Gtk.Builder()
