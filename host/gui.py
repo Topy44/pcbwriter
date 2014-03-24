@@ -53,16 +53,15 @@ class Handler:
 
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
-            self.img = Img()
-            self.img.load(dialog.get_filename(), builder.get_object("drawingareaPreview"))
+            layout.img = Img()
+            layout.img.load(dialog.get_filename(), builder.get_object("drawingareaPreview"))
         elif response == Gtk.ResponseType.CANCEL:
             pass
 
         dialog.destroy()
 
     def on_buttonFitDevice_clicked(self, button):
-        builder.get_object("adjustmentZoom").set_value(builder.get_object("scrolledwindowPreview").get_allocation().width / (self.devwidth + self.limits*2))
-        Gtk.Widget.queue_draw(builder.get_object("drawingareaPreview"))
+        layout.fit_device()
 
     def on_adjustmentZoom_value_changed(self, adj):
         device.scale = adj.get_value()
@@ -77,7 +76,7 @@ class Handler:
         Gtk.Widget.queue_draw(builder.get_object("drawingareaPreview"))
 
     def on_adjThreshold_value_changed(self, adj):
-        self.img.threshold = adj.get_value()
+        layout.img.threshold = adj.get_value()
         Gtk.Widget.queue_draw(builder.get_object("drawingareaPreview"))
 
 class LayoutWidget:
@@ -87,6 +86,10 @@ class LayoutWidget:
         self.devwidth = builder.get_object("adjustmentDeviceWidth").get_value()
         self.devheight = builder.get_object("adjustmentDeviceHeight").get_value()
         self.limits = 10
+
+    def fit_device(self):
+        builder.get_object("adjustmentZoom").set_value(builder.get_object("scrolledwindowPreview").get_allocation().width / (self.devwidth + self.limits*2))
+        Gtk.Widget.queue_draw(builder.get_object("drawingareaPreview"))
 
     def draw(self, da, cr):
         dawidth = da.get_allocation().width
@@ -129,7 +132,7 @@ class Img:
         self.imgtmp = None
         self.pdftmp = None
         self.pil = None
-        self.quality = 2
+        self.quality = 5
         self.threshold = 128
         self._thresholdtable = self._generate_threshold_table(self.threshold)
 
@@ -195,10 +198,11 @@ class Img:
         pixbuf = loader.get_pixbuf()
         loader.close()
 
-        scale = device.scale / 72 * 25.4 / self.quality
+        qscale = device.scale / 72 * 25.4 / self.quality
         cr.save()
-        cr.scale(scale, scale)
-        Gdk.cairo_set_source_pixbuf(cr, pixbuf, device.leftmargin, device.topmargin)
+        cr.translate(layout.limits * device.scale, layout.limits * device.scale)
+        cr.scale(qscale, qscale)
+        Gdk.cairo_set_source_pixbuf(cr, pixbuf, device.leftmargin * device.scale / qscale, device.topmargin * device.scale / qscale)
         cr.paint()
         cr.restore()
 
@@ -216,14 +220,14 @@ def print_to_console(message):
     console.scroll_mark_onscreen(console.get_buffer().get_insert())
     print message
 
-# Create device instance
-device = Device()
-layout = LayoutWidget()
-
 # Load GUI layout
 builder = Gtk.Builder()
 builder.add_from_file("pcbwriter.glade")
 builder.connect_signals(Handler())
+
+# Create device instance
+device = Device()
+layout = LayoutWidget()
 
 # Prepare the main window
 window = builder.get_object("pcbwriter")
